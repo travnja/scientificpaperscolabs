@@ -13,7 +13,7 @@ import sys, random, math
 from turtle import Pen
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QSizePolicy, QWidget, QHBoxLayout, QListWidget
-from PySide6.QtGui import QBrush, QPen, QTransform, QPainter
+from PySide6.QtGui import QBrush, QPen, QTransform, QPainter, QColor
 
 import json
 
@@ -86,6 +86,7 @@ class VisualObjects():
                     isSomeOfNeighboursConnected = True     
                 else:
                     edge.elipse.setBrush(NEIGHBOUR_SELECTED)
+                    VisualObjects.findItem(edge.elipse).setBackground(NEIGHBOUR_SELECTED)
                     edge.edge.setPen(CONNECTION_HIGHLIGHT)
             return isSomeOfNeighboursConnected
     
@@ -223,9 +224,10 @@ class MainWindow(QMainWindow):
             y1 = self.data[name]["pozice"][0]
             for spojeni in self.data[name]["spoluprace"]:
                         otherScientist = spojeni["druhyVedec"]
-                        sila = spojeni["miraSpoluprace"]
+                        sila = spojeni["miraSpoluprace"] * SIZE_SCALE
                         if self.data[otherScientist]["pozice"][0] >= y1:
-                                    line = self.scene.addLine(POSITION_SCALE*x1, POSITION_SCALE*y1, POSITION_SCALE*self.data[otherScientist]["pozice"][1], POSITION_SCALE*self.data[otherScientist]["pozice"][0], BLACK_PEN)
+                                    line = self.scene.addLine(POSITION_SCALE*x1, POSITION_SCALE*y1, POSITION_SCALE*self.data[otherScientist]["pozice"][1], POSITION_SCALE*self.data[otherScientist]["pozice"][0], 
+                                    QPen(NOT_SELECTED, sila))
                                     if not VisualObjects.scientistDetails[name]: VisualObjects.scientistDetails[name] = []
                                     if not VisualObjects.scientistDetails[otherScientist]: VisualObjects.scientistDetails[otherScientist] = []
 
