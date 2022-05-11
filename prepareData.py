@@ -54,8 +54,8 @@ for hrana in G.edges.data():
 # vypocet pozice
 
 
-N = 1000
-K = 5
+N = 1500
+K = 2
 P = 0.05
 cnt=0
 # attractive force
