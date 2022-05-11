@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import scipy
 import numpy
 
-
+minD = 0.05
 class Spoluprace:
     def __init__(self, druhyVedec, miraSpoluprace):
         self.druhyVedec = druhyVedec.jmeno
@@ -75,7 +75,7 @@ def f_r(d, k):
     return force
 
 
-def fruchterman_reingold(G, iteration=30, cnt=0):
+def fruchterman_reingold(G, iteration=50, cnt=0):
     W = 1
     L = 1
     area = W * L
@@ -86,7 +86,7 @@ def fruchterman_reingold(G, iteration=30, cnt=0):
         G._node[v]['x'] = W * random()
         G._node[v]['y'] = L * random()
 
-    t = W / 10
+    t = W / 5
     dt = t / (iteration + 1)
 
     print("area:{0}".format(area))
@@ -126,6 +126,7 @@ def fruchterman_reingold(G, iteration=30, cnt=0):
             dx = G._node[v]['x'] - G._node[u]['x']
             dy = G._node[v]['y'] - G._node[u]['y']
             delta = math.sqrt(dx * dx + dy * dy)
+            if delta < minD: delta = 0
             if delta != 0:
                 d = f_a(delta, k) / delta
                 ddx = dx * d
