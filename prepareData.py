@@ -63,22 +63,23 @@ for hrana in G.edges.data():
 
 ##################################################################
 # vypocet pozice
-
 # attractive force
 def f_a(d, k):
-    return d * d / k
+    force = d*d / k
+    return force
 
 
 # repulsive force
 def f_r(d, k):
-    return k * k / d
+    force = k*k / d
+    return force
 
 
 def fruchterman_reingold(G, iteration=30, cnt=0):
     W = 1
     L = 1
     area = W * L
-    k = math.sqrt(area / len(pracovnici))
+    k = (area / len(pracovnici))*10
 
     # initial position
     for v in G.nodes():
@@ -93,7 +94,7 @@ def fruchterman_reingold(G, iteration=30, cnt=0):
     print("t:{0}, dt:{1}".format(t, dt))
 
     for i in range(iteration):
-        print("iter {0}".format(i))
+        print("iter {0} t: {1}".format(i, t))
 
         pos = {}
         for v in G.nodes():
@@ -103,7 +104,8 @@ def fruchterman_reingold(G, iteration=30, cnt=0):
         plt.xlim([-0.1, 1.1])
         plt.axis('off')
         nx.draw_networkx(G, pos=pos, node_size=10, width=0.1, with_labels=False)
-        plt.savefig("fig/{0}.png".format(i))
+        if i % 5 == 0:
+            plt.savefig("fig/{0}.png".format(i))
 
         # calculate repulsive forces
         for v in G.nodes():
@@ -160,7 +162,8 @@ def fruchterman_reingold(G, iteration=30, cnt=0):
     plt.xlim([-0.1, 1.1])
     plt.axis('off')
     nx.draw_networkx(G, pos=pos, node_size=10, width=0.1, with_labels=False)
-    plt.savefig("fig/{0}.png".format(i + 1))
+    if i % 5 == 0:
+        plt.savefig("fig/{0}.png".format(i + 1))
 
     return pos
 
@@ -169,7 +172,6 @@ def main():
     G = nx.read_gml(input)
 
     pos = fruchterman_reingold(G)
-    print(pos)
     i=0
     for pracovnik in pracovnici:
         positioneee=pos[pracovnik]
