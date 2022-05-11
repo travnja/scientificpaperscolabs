@@ -68,8 +68,9 @@ class VisGraphicsView(QGraphicsView):
         super().mouseReleaseEvent(event)
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, data):
         super(MainWindow, self).__init__()
+        self.data = data
         self.setWindowTitle('VIZ Qt for Python Example')
         self.createGraphicView()
         self.generateAndMapData()
@@ -84,22 +85,11 @@ class MainWindow(QMainWindow):
         self.view.setGeometry(0, 0, 800, 600)
 
     def generateAndMapData(self):
-        #Generate random data
-        count = 100;
-        x = []
-        y = []
-        r = []
-        c = []
-        for i in range(0, count):
-            x.append(random.random()*600)
-            y.append(random.random()*400)
-            r.append(random.random()*50)
-            c.append(random.randint(0, 2))
-
         #Map data to graphical elements
-        for i in range(0, count):
-            d = 2*r[i]
-            ellipse = self.scene.addEllipse(x[i], y[i], d, d, self.scene.pen, self.brush[c[i]])
+        for zaznam in self.data.keys():
+            d = 2
+            print(self.data[zaznam])
+            ellipse = self.scene.addEllipse(100*self.data[zaznam]["pozice"][1], 100*self.data[zaznam]["pozice"][0], d, d, self.scene.pen, self.brush[1])
 
 def main():
             
@@ -109,7 +99,7 @@ def main():
 
     
     app = QApplication(sys.argv)
-    ex = MainWindow()
+    ex = MainWindow(data)
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
