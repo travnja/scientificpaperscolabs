@@ -12,19 +12,17 @@
 import sys, random, math
 from turtle import Pen
 from PySide6.QtCore import Qt, QSize
-from PySide6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QSizePolicy
+from PySide6.QtWidgets import QApplication, QMainWindow, QGraphicsScene, QGraphicsView, QSizePolicy, QWidget, QHBoxLayout, QListWidget
 from PySide6.QtGui import QBrush, QPen, QTransform, QPainter
+
 import json
-
-import time
-
-from numpy import VisibleDeprecationWarning
 
 SELECTED = QBrush(Qt.red)
 NEIGHBOUR_SELECTED = QBrush(Qt.green)
 NOT_SELECTED = QBrush(Qt.gray)
+ITEM_NOT_SELECTED = QBrush(Qt.white)
 
-OUTLINE = QPen(NOT_SELECTED, 1)
+OUTLINE = QPen(Qt.black, 1)
 BLACK_PEN = QPen(NOT_SELECTED, 3)
 CONNECTION_HIGHLIGHT = QPen(NEIGHBOUR_SELECTED, 5)
 BOTH_CONNECTED = QPen(SELECTED, 15)
@@ -44,6 +42,7 @@ class VisualObjects():
     selectedNames = []
     namesOfElipses = {} # elipse : name
     scientistDetails = {} #name : connections
+    listOfNames = None
 
     def init(scientists):
         for key in scientists.keys():
@@ -55,19 +54,27 @@ class VisualObjects():
                 VisualObjects.selectElipse(elipse)
 
     def selectElipse(elipse):
+        item = VisualObjects.findItem(elipse)
+        name = VisualObjects.namesOfElipses[elipse]
+        VisualObjects.listOfNames.scrollToItem(item)        
+        
         if elipse in VisualObjects.selected:
             VisualObjects.selected.remove(elipse)
-            VisualObjects.selectedNames.remove(VisualObjects.namesOfElipses[elipse])
+            
+            VisualObjects.selectedNames.remove(name)
             
             if VisualObjects.deselectEdges(elipse):
                 elipse.setBrush(NEIGHBOUR_SELECTED)
+                item.setBackground(NEIGHBOUR_SELECTED)
             else:
-                elipse.setBrush(NOT_SELECTED)        
+                elipse.setBrush(NOT_SELECTED)
+                item.setBackground(ITEM_NOT_SELECTED)      
         else:
             VisualObjects.selected.append(elipse)
-            VisualObjects.selectedNames.append(VisualObjects.namesOfElipses[elipse])
+            VisualObjects.selectedNames.append(name)
 
             elipse.setBrush(SELECTED)
+            item.setBackground(SELECTED)
             VisualObjects.selectEdges(elipse)
 
     def selectEdges(elipse):
@@ -101,12 +108,16 @@ class VisualObjects():
                 if edge.otherName in VisualObjects.selectedNames:
                     return
             elipse.setBrush(NOT_SELECTED)
+            VisualObjects.findItem(elipse).setBackground(ITEM_NOT_SELECTED)
 
     def computeMissingElipses():
         for scientist in VisualObjects.scientistDetails:
             for edge in VisualObjects.scientistDetails[scientist]:
                 edge.elipse = VisualObjects.findElipseByName(edge.otherName)
-                    
+
+    def findItem(elipse):
+        name = VisualObjects.namesOfElipses[elipse]
+        return VisualObjects.listOfNames.findItems(name, Qt.MatchExactly)[0]
         
     def findElipseByName(name):
         for e in VisualObjects.namesOfElipses:
@@ -160,6 +171,8 @@ class VisGraphicsView(QGraphicsView):
             self.myScene.wasDragg = True
         super().mouseReleaseEvent(event)
 
+               
+
 class MainWindow(QMainWindow):
     
     def __init__(self, data):
@@ -169,27 +182,40 @@ class MainWindow(QMainWindow):
         self.data = data
         VisualObjects.init(data)
 
-
         self.createGraphicView()
         self.generateAndMapData()
+        self.listWidget.sortItems()
 
         self.setMinimumSize(1080, 720)
         self.show()
 
     def createGraphicView(self):
         self.scene = VisGraphicsScene()
+        layout = QHBoxLayout()
         
-        self.view = VisGraphicsView(self.scene, self)
-        # listWidget = 
-        self.setCentralWidget(self.view)
-        
+        self.listWidget = QListWidget()
+        self.listWidget.setMinimumWidth(200)
+        self.listWidget.itemClicked.connect(self.Clicked)
+        VisualObjects.listOfNames = self.listWidget
 
-        self.view.setGeometry(400, 400, 800, 800)
+        layout.addWidget(self.listWidget)
+        layout.addWidget(VisGraphicsView(self.scene, self))
+
+
+        centralWidget = QWidget()
+        centralWidget.setLayout(layout)
+        centralWidget.setGeometry(400, 400, 800, 800)
+        self.setCentralWidget(centralWidget)
+
+    def Clicked(self, item):
+        elipse = VisualObjects.findElipseByName(item.text())
+        VisualObjects.selectElipse(elipse)
+        
 
     def generateAndMapData(self):
         #Map data to graphical elements
-        POSITION_SCALE = 200
-        SIZE_SCALE = 15
+        POSITION_SCALE = 8000
+        SIZE_SCALE = 5
 
         # vykreslíme hrany a až poté vědce, aby nedocházelo k překrývání    
         for name in self.data.keys():
@@ -212,12 +238,11 @@ class MainWindow(QMainWindow):
             pen = OUTLINE
             d = SIZE_SCALE*(degree+2)
 
-            if degree == 0:
-                    d = 2*SIZE_SCALE
-            elif degree > 10:
+            if degree > 10:
                     d = SIZE_SCALE*12
             elipse = self.scene.addEllipse(POSITION_SCALE*self.data[name]["pozice"][1]-d/2, POSITION_SCALE*self.data[name]["pozice"][0]-d/2, d, d, pen, brush)
-            VisualObjects.namesOfElipses[elipse] = self.data[name]["jmeno"]
+            VisualObjects.namesOfElipses[elipse] = name
+            self.listWidget.addItem(name)
 
         VisualObjects.computeMissingElipses()
 
