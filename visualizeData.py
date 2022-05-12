@@ -21,18 +21,20 @@ SELECTED = QBrush(Qt.red)
 NEIGHBOUR_SELECTED = QBrush(Qt.green)
 NOT_SELECTED = QBrush(Qt.gray)
 ITEM_NOT_SELECTED = QBrush(Qt.white)
+MUTUAL_CONNECTION = QBrush(Qt.yellow)
 
 OUTLINE = QPen(Qt.black, 1)
-BLACK_PEN = QPen(NOT_SELECTED, 3)
 CONNECTION_HIGHLIGHT = QPen(NEIGHBOUR_SELECTED, 5)
-BOTH_CONNECTED = QPen(SELECTED, 15)
+BOTH_CONNECTED = QPen(SELECTED, 8)
 NO_PEN = QPen(Qt.NoPen)
 
+CONNECTION_C = QColor(Qt.green)
 class Connection():
-    def __init__(self, edge, otherName) -> None:
+    def __init__(self, edge, otherName, pen) -> None:
         self.otherName = otherName
         self.edge = edge
         self.elipse = None
+        self.pen = pen
     def elipse(self, elipse):
         self.elipse = elipse
 
@@ -60,7 +62,6 @@ class VisualObjects():
         
         if elipse in VisualObjects.selected:
             VisualObjects.selected.remove(elipse)
-            
             VisualObjects.selectedNames.remove(name)
             
             if VisualObjects.deselectEdges(elipse):
@@ -78,7 +79,8 @@ class VisualObjects():
             VisualObjects.selectEdges(elipse)
 
     def selectEdges(elipse):
-            edges = VisualObjects.scientistDetails[VisualObjects.namesOfElipses[elipse]]
+            thisName = VisualObjects.namesOfElipses[elipse]
+            edges = VisualObjects.scientistDetails[thisName]
             isSomeOfNeighboursConnected = False
             for edge in edges:
                 if edge.otherName in VisualObjects.selectedNames:
@@ -88,6 +90,10 @@ class VisualObjects():
                     edge.elipse.setBrush(NEIGHBOUR_SELECTED)
                     VisualObjects.findItem(edge.elipse).setBackground(NEIGHBOUR_SELECTED)
                     edge.edge.setPen(CONNECTION_HIGHLIGHT)
+                    for e in VisualObjects.scientistDetails[edge.otherName]:
+                        if e.otherName != thisName and e.otherName in VisualObjects.selectedNames:
+                            edge.elipse.setBrush(MUTUAL_CONNECTION)
+                            VisualObjects.findItem(edge.elipse).setBackground(MUTUAL_CONNECTION)
             return isSomeOfNeighboursConnected
     
     def deselectEdges(elipse):
@@ -98,7 +104,7 @@ class VisualObjects():
                     isSomeOfNeighboursConnected = True
                     edge.edge.setPen(CONNECTION_HIGHLIGHT)
                 else:
-                    edge.edge.setPen(BLACK_PEN)
+                    edge.edge.setPen(edge.pen)
                 VisualObjects.checkNeighboursSelected(edge.elipse)
             return isSomeOfNeighboursConnected
     
@@ -107,6 +113,11 @@ class VisualObjects():
             edges = VisualObjects.scientistDetails[VisualObjects.namesOfElipses[elipse]]
             for edge in edges:
                 if edge.otherName in VisualObjects.selectedNames:
+                    for edge2 in edges:
+                        if edge2 != edge and edge2.otherName in VisualObjects.selectedNames:
+                            return
+                    elipse.setBrush(NEIGHBOUR_SELECTED)        
+                    VisualObjects.findItem(elipse).setBackground(NEIGHBOUR_SELECTED)
                     return
             elipse.setBrush(NOT_SELECTED)
             VisualObjects.findItem(elipse).setBackground(ITEM_NOT_SELECTED)
@@ -215,7 +226,7 @@ class MainWindow(QMainWindow):
 
     def generateAndMapData(self):
         #Map data to graphical elements
-        POSITION_SCALE = 8000
+        POSITION_SCALE = 4000
         SIZE_SCALE = 5
 
         # vykreslíme hrany a až poté vědce, aby nedocházelo k překrývání    
@@ -224,24 +235,26 @@ class MainWindow(QMainWindow):
             y1 = self.data[name]["pozice"][0]
             for spojeni in self.data[name]["spoluprace"]:
                         otherScientist = spojeni["druhyVedec"]
-                        sila = spojeni["miraSpoluprace"] * SIZE_SCALE
+                        coopRatio = spojeni["miraSpoluprace"] * SIZE_SCALE
                         if self.data[otherScientist]["pozice"][0] >= y1:
+                                    pen = QPen(NOT_SELECTED, coopRatio)
                                     line = self.scene.addLine(POSITION_SCALE*x1, POSITION_SCALE*y1, POSITION_SCALE*self.data[otherScientist]["pozice"][1], POSITION_SCALE*self.data[otherScientist]["pozice"][0], 
-                                    QPen(NOT_SELECTED, sila))
+                                    pen)
                                     if not VisualObjects.scientistDetails[name]: VisualObjects.scientistDetails[name] = []
                                     if not VisualObjects.scientistDetails[otherScientist]: VisualObjects.scientistDetails[otherScientist] = []
 
-                                    VisualObjects.scientistDetails[name].append(Connection(line, otherScientist))
-                                    VisualObjects.scientistDetails[otherScientist].append(Connection(line, name))
+                                    VisualObjects.scientistDetails[name].append(Connection(line, otherScientist, pen))
+                                    VisualObjects.scientistDetails[otherScientist].append(Connection(line, name, pen))
         for name in self.data.keys():
             degree = len(self.data[name]["spoluprace"])
 
             brush = NOT_SELECTED
             pen = OUTLINE
-            d = SIZE_SCALE*(degree+2)
+            d = SIZE_SCALE*4
+            # d = SIZE_SCALE*(degree+2)
 
-            if degree > 10:
-                    d = SIZE_SCALE*12
+            # if degree > 10:
+            #         d = SIZE_SCALE*12
             elipse = self.scene.addEllipse(POSITION_SCALE*self.data[name]["pozice"][1]-d/2, POSITION_SCALE*self.data[name]["pozice"][0]-d/2, d, d, pen, brush)
             VisualObjects.namesOfElipses[elipse] = name
             self.listWidget.addItem(name)
